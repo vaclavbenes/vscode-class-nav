@@ -1,6 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { cursorPositionBeforeQuote } from './cursor';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -15,18 +16,18 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "Html Class Navigation" is now active!');
+	console.log('"Html Class Navigation" is now active!');
 
 
-	registerDisposableCommand("extension.jumpUpToClass", () => {
+	registerDisposableCommand("class-navigation.jumpUpToClass", () => {
 		jumpToLine("up")
 	})
 
-	registerDisposableCommand("extension.jumpDownToClass", () => {
+	registerDisposableCommand("class-navigation.jumpDownToClass", () => {
 		jumpToLine("down")
 	})
 
-	registerDisposableCommand("extension.jumpIntoClass", () => {
+	registerDisposableCommand("class-navigation.jumpIntoClass", () => {
 		jumpIntoClass()
 	})
 }
@@ -45,41 +46,6 @@ function jumpIntoClass() {
 	}
 }
 
-function emptySpaceAfterCursor(currLineNumber: number, cursorLinePos: number): void {
-	const emptySpace = " "
-	let editor = vscode.window.activeTextEditor;
-	const currLineSelection = new vscode.Position(currLineNumber, cursorLinePos)
-
-	if (editor) {
-		editor.edit(editBuilder => {
-			editBuilder.replace(currLineSelection, emptySpace)
-		})
-
-		moveToPosition(new vscode.Position(currLineNumber, cursorLinePos + 1))
-	}
-
-}
-
-function cursorPositionBeforeQuote(line: vscode.TextLine): number | null {
-	let count = 0
-	let index = 0
-
-	const letters = line.text
-
-	for (const letter of letters) {
-		if (letter === "\"") {
-			count += 1
-		}
-
-		if (count === 2) {
-			return index
-		}
-
-		index += 1
-	}
-	return null
-}
-
 function isEmpyQuote(line: vscode.TextLine): boolean {
 	return !line?.text.includes('""')
 }
@@ -93,6 +59,10 @@ function jumpToLine(direction: "up" | "down", regexp = /:?class/g) {
 	if (editor) {
 		let currLineNumber = editor.selection.active.line;
 		let currCharPos = editor.selection.active.character
+
+		const oldLinePosition = new vscode.Position(currLineNumber, currCharPos);
+		const offset = getOffset(oldLinePosition)
+		removeEmptySpaceBeforeCursor(currLineNumber, currCharPos, currCharPos - offset!);
 
 		if (direction == "up") {
 			for (let i = currLineNumber - 1; i >= 0; i--) {
@@ -114,12 +84,27 @@ function jumpToLine(direction: "up" | "down", regexp = /:?class/g) {
 			throw new Error("Bad direction choise.");
 
 		}
-
-
 		upLine && moveToEndOfQuotesTextLine(upLine)
 		downLine && moveToEndOfQuotesTextLine(downLine)
+	}
+}
 
+function replaceLineSelection(currLineSelection: vscode.Selection | vscode.Position | vscode.Range, replaceString: string) {
+	let editor = vscode.window.activeTextEditor;
+	if (editor) {
+		editor.edit(editBuilder => {
+			editBuilder.replace(currLineSelection, replaceString);
+		})
+	}
 
+}
+
+function insertLineSelection(currLineSelection: vscode.Position, insertString: string) {
+	let editor = vscode.window.activeTextEditor;
+	if (editor) {
+		editor.edit(editBuilder => {
+			editBuilder.insert(currLineSelection, insertString);
+		})
 	}
 
 }
@@ -128,17 +113,18 @@ function moveToStartOfTextLine(line: vscode.TextLine): void {
 	moveToLine(line.lineNumber, line.firstNonWhitespaceCharacterIndex);
 }
 
-/*
- * Move cursor into of quotes ""
- * no quotes no move
- * return cursorPosition
- */
 function moveToEndOfQuotesTextLine(line: vscode.TextLine): number | null {
+
 	const cursorLinePos = cursorPositionBeforeQuote(line)
 
 	if (cursorLinePos) {
 		moveToLine(line.lineNumber, cursorLinePos);
-		isEmpyQuote(line) && emptySpaceAfterCursor(line.lineNumber, cursorLinePos)
+		if (isEmpyQuote(line)) {
+			// this is bad fix !
+			setTimeout(() => {
+				emptySpaceAfterCursor(line.lineNumber, cursorLinePos)
+			}, 100);
+		}
 	}
 
 	return cursorLinePos
@@ -165,4 +151,35 @@ function moveToLine(lineRangeStart: number, cRangeStart: number, lineRangeEnd?: 
 	}
 }
 
+function emptySpaceAfterCursor(currLineNumber: number, cursorLinePos: number): void {
+	const emptySpace = " "
+	insertLineSelection(new vscode.Position(currLineNumber, cursorLinePos), emptySpace)
 
+}
+
+function removeEmptySpaceBeforeCursor(currLineNumber: number, cursorLinePos: number, offset: number) {
+	const emptySpace = ""
+	const currLinePosition = new vscode.Position(currLineNumber, cursorLinePos - offset)
+	const currLineSelection = new vscode.Range(currLinePosition, new vscode.Position(currLineNumber, cursorLinePos))
+	replaceLineSelection(currLineSelection, emptySpace)
+}
+
+function getOffset(position: vscode.Position) {
+	let editor = vscode.window.activeTextEditor;
+	if (editor) {
+		const line = editor.document.lineAt(position.line)
+		const currCharPos = position.character
+		let replaceCharCount = currCharPos
+
+		for (let i = currCharPos - 1; i >= 0; i--) {
+			if (/\s/.test(line.text.charAt(i))) {
+				replaceCharCount -= 1
+			} else {
+				break
+			}
+		}
+
+		return replaceCharCount
+
+	}
+}
