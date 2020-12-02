@@ -1,32 +1,38 @@
 {
-	"name": "classnavigation",
-	"displayName": "classnavigation",
+	"name": "class-navigation",
+	"displayName": "Class Navigation",
 	"description": "",
+	"publisher": "VaclavBenes",
 	"version": "0.0.1",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/vaclavbenes/vscode-class-nav"
+	},
+	"icon": "img/navigation.png",
 	"engines": {
 		"vscode": "^1.51.0"
 	},
 	"categories": [
 		"Other"
 	],
-	"activationEvents": [
-		"onCommand:extension.jumpUpToClass",
-		"onCommand:extension.jumpDownToClass",
-		"onCommand:extension.jumpIntoClass"
-	],
 	"main": "./out/extension.js",
+	"activationEvents": [
+		"onCommand:class-navigation.jumpUpToClass",
+		"onCommand:class-navigation.jumpDownToClass",
+		"onCommand:class-navigation.jumpIntoClass"
+	],
 	"contributes": {
 		"commands": [
 			{
-				"command": "extension.jumpUpToClass",
+				"command": "class-navigation.jumpUpToClass",
 				"title": "Jump up to class"
 			},
 			{
-				"command": "extension.jumpDownToClass",
+				"command": "class-navigation.jumpDownToClass",
 				"title": "Jump down to class"
 			},
 			{
-				"command": "extension.jumpIntoClass",
+				"command": "class-navigation.jumpIntoClass",
 				"title": "Jump into to class"
 			}
 		]
@@ -40,13 +46,20 @@
 	},
 	"devDependencies": {
 		"@types/glob": "^7.1.1",
-		"@types/mocha": "^5.2.6",
 		"@types/node": "^10.12.21",
 		"@types/vscode": "^1.51.0",
 		"glob": "^7.1.4",
-		"mocha": "^6.1.4",
+		"mocha": "^8.2.1",
 		"typescript": "^3.3.1",
-		"tslint": "^5.12.1",
 		"vscode-test": "^1.0.2"
+	},
+	"dependencies": {
+		"@types/chai": "^4.2.14",
+		"@types/expect": "^24.3.0",
+		"@types/mocha": "^8.0.4",
+		"chai": "^4.2.0",
+		"esm": "^3.2.25",
+		"expect": "^26.6.2",
+		"jest": "^26.6.3"
 	}
 }
