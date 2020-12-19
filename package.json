@@ -19,7 +19,9 @@
 	"activationEvents": [
 		"onCommand:class-navigation.jumpUpToClass",
 		"onCommand:class-navigation.jumpDownToClass",
-		"onCommand:class-navigation.jumpIntoClass"
+		"onCommand:class-navigation.jumpIntoClass",
+		"onCommand:class-navigation.createClass",
+		"onCommand:class-navigation.createClassInUpperTag"
 	],
 	"contributes": {
 		"commands": [
@@ -34,6 +36,14 @@
 			{
 				"command": "class-navigation.jumpIntoClass",
 				"title": "Jump into to class"
+			},
+			{
+				"command": "class-navigation.createClass",
+				"title": "Create class in tag"
+			},
+			{
+				"command": "class-navigation.createClassInUpperTag",
+				"title": "Create class in upper tag"
 			}
 		]
 	},

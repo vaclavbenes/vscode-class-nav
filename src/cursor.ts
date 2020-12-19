@@ -20,3 +20,19 @@ export function cursorPositionBeforeQuote(line: TextLine): number | null {
     }
     return null
 }
+
+
+export function cursorPositionBeforeCloseTag(line: TextLine): number | null {
+    const letters = line.text
+
+    let index = 0
+
+    for (const letter of letters) {
+        if (letter === ">") {
+            return index
+        }
+        index += 1
+
+    }
+    return null
+}
