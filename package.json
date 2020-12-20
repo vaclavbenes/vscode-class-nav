@@ -21,7 +21,8 @@
 		"onCommand:class-navigation.jumpDownToClass",
 		"onCommand:class-navigation.jumpIntoClass",
 		"onCommand:class-navigation.createClass",
-		"onCommand:class-navigation.createClassInUpperTag"
+		"onCommand:class-navigation.createClassInUpperTag",
+		"onCommand:class-navigation.createClassInDownTag"
 	],
 	"contributes": {
 		"commands": [
@@ -44,6 +45,10 @@
 			{
 				"command": "class-navigation.createClassInUpperTag",
 				"title": "Create class in upper tag"
+			},
+			{
+				"command": "class-navigation.createClassInDownTag",
+				"title": "Create class in down tag"
 			}
 		]
 	},

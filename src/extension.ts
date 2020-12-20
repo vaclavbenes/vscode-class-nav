@@ -44,6 +44,10 @@ export function activate(context: vscode.ExtensionContext) {
 	registerDisposableCommand("class-navigation.createClassInUpperTag", () => {
 		createClassInUpperTag()
 	})
+
+	registerDisposableCommand("class-navigation.createClassInDownTag", () => {
+		createClassInDownTag()
+	})
 }
 
 // this method is called when your extension is deactivated
@@ -52,10 +56,9 @@ export function deactivate() { }
 
 
 
-function createClassInUpperTag() {
 
-	const actualLine = getLine()
-	actualLine && removeClassTag(actualLine)
+function createClassInUpperTag() {
+	tag.remove()
 
 	setTimeout(() => {
 		let changeLine = getClosestLineWithoutTag("up", RegExp("<[a-z].*>"));
@@ -64,32 +67,39 @@ function createClassInUpperTag() {
 
 }
 
+function createClassInDownTag() {
+	tag.remove()
 
-class Tag {
+	setTimeout(() => {
+		let changeLine = getClosestLineWithoutTag("down", RegExp("<[a-z].*>"));
+		createClass(changeLine)
+	}, 100);
+}
+
+
+
+class Attribute {
 	name = "class"
-	constructor(private line: vscode.TextLine) { }
+
+	constructor(name?: string) {
+		if (name) {
+			this.name = name
+		}
+	}
 
 	create() {
-		createClassTag(this.line)
+		const actualLine = getLine()
+		// create atribute by name
+		actualLine && createClassTag(actualLine)
+	}
+	remove() {
+		const actualLine = getLine()
+		actualLine && removeClassTag(actualLine)
 	}
 }
 
-function createClass(line: vscode.TextLine | null = null) {
+const tag = new Attribute()
 
-	if (!line) line = getLine()
-
-	if (line) {
-		console.log(line, isSingleTag(line.text));
-
-		if (isSingleTag(line.text) && !isClassTag(line.text)) {
-			createClassTag(line)
-		} else {
-			// is not tag or is complicated tag
-		}
-
-	}
-
-}
 
 function createClassTag(line: vscode.TextLine) {
 	const cursorLinePos = moveToEndOfCloseTag(line)
@@ -98,8 +108,8 @@ function createClassTag(line: vscode.TextLine) {
 	const insertString = 'class=""'
 
 	if (cursorLinePos) {
-		insertLineSelection(new vscode.Position(currLineNumber, cursorLinePos), insertString)
-		moveToLine(line.lineNumber, cursorLinePos + insertString.length);
+		insertLineSelection(new vscode.Position(currLineNumber, cursorLinePos), insertString,
+			() => moveToLine(line.lineNumber, cursorLinePos + insertString.length))
 	}
 }
 
@@ -120,6 +130,22 @@ function removeClassTag(line: vscode.TextLine, name = "class") {
 	}
 }
 
+function createClass(line: vscode.TextLine | null = null) {
+
+	if (!line) line = getLine()
+
+	if (line) {
+		console.log(line, isSingleTag(line.text));
+
+		if (isSingleTag(line.text) && !isClassTag(line.text)) {
+			createClassTag(line)
+		} else {
+			// is not tag or is complicated tag
+		}
+
+	}
+
+}
 
 const currCharPos = (): number | null => {
 	let editor = vscode.window.activeTextEditor;
@@ -199,7 +225,6 @@ const getClosestLineWithoutTag = (direction: "up" | "down", regexp: RegExp) => {
 }
 
 
-
 const getClosestLine = (direction: "up" | "down", regexp: RegExp) => {
 	let editor = vscode.window.activeTextEditor;
 	let changeLine: vscode.TextLine | null = null
@@ -271,17 +296,22 @@ function removeLineSelection(currLineSelection: vscode.Selection | vscode.Range)
 
 }
 
-function insertLineSelection(currLineSelection: vscode.Position, insertString: string) {
+function insertLineSelection(currLineSelection: vscode.Position, insertString: string, callback?: () => void) {
 	let editor = vscode.window.activeTextEditor;
 	if (editor) {
 		editor.edit(editBuilder => {
 			editBuilder.insert(currLineSelection, insertString);
-		}).then(() => {
-			flag = true
+		}, { undoStopBefore: true, undoStopAfter: false }).then(() => {
+			callback && callback()
 		})
 	}
 
 }
+
+
+function customUndo() {
+}
+
 
 function moveToStartOfTextLine(line: vscode.TextLine): void {
 	moveToLine(line.lineNumber, line.firstNonWhitespaceCharacterIndex);
@@ -292,9 +322,7 @@ function moveToEndOfQuotesTextLine(line: vscode.TextLine): number | null {
 
 	const cursorLinePos = cursorPositionBeforeQuote(line)
 
-
 	if (cursorLinePos) {
-
 		moveToLine(line.lineNumber, cursorLinePos);
 		if (isEmpyQuote(line)) {
 			// this is bad fix !
