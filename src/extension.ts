@@ -53,10 +53,6 @@ export function activate(context: vscode.ExtensionContext) {
 // this method is called when your extension is deactivated
 export function deactivate() { }
 
-
-
-
-
 function createClassInUpperTag() {
 	tag.remove()
 
@@ -75,8 +71,6 @@ function createClassInDownTag() {
 		createClass(changeLine)
 	}, 100);
 }
-
-
 
 class Attribute {
 	name = "class"
@@ -135,8 +129,6 @@ function createClass(line: vscode.TextLine | null = null) {
 	if (!line) line = getLine()
 
 	if (line) {
-		console.log(line, isSingleTag(line.text));
-
 		if (isSingleTag(line.text) && !isClassTag(line.text)) {
 			createClassTag(line)
 		} else {
@@ -281,7 +273,7 @@ function replaceLineSelection(currLineSelection: vscode.Selection | vscode.Posit
 	if (editor) {
 		editor.edit(editBuilder => {
 			editBuilder.replace(currLineSelection, replaceString);
-		})
+		}, { undoStopBefore: true, undoStopAfter: false })
 	}
 
 }
@@ -291,7 +283,7 @@ function removeLineSelection(currLineSelection: vscode.Selection | vscode.Range)
 	if (editor) {
 		editor.edit(editBuilder => {
 			editBuilder.delete(currLineSelection);
-		})
+		}, { undoStopBefore: true, undoStopAfter: false })
 	}
 
 }
@@ -307,11 +299,6 @@ function insertLineSelection(currLineSelection: vscode.Position, insertString: s
 	}
 
 }
-
-
-function customUndo() {
-}
-
 
 function moveToStartOfTextLine(line: vscode.TextLine): void {
 	moveToLine(line.lineNumber, line.firstNonWhitespaceCharacterIndex);
