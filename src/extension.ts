@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { cursorPositionBeforeCloseTag, cursorPositionBeforeQuote } from './cursor';
+import { cursorPositionBeforeCloseTag, cursorPositionBeforeQuote, cursorPositionInClassTag } from './cursor';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -168,7 +168,7 @@ const isClassTag = (text: string): boolean => {
 
 function jumpIntoClass() {
 	const line = getLine()
-	line && moveToEndOfQuotesTextLine(line)
+	line && moveToClassTag(line)
 }
 
 function isEmpyQuote(line: vscode.TextLine): boolean {
@@ -265,7 +265,7 @@ function jumpToLine(direction: "up" | "down", regexp = /:?class/g) {
 	changePreviousSelection()
 
 	let changeLine = getClosestLine(direction, regexp);
-	changeLine && moveToEndOfQuotesTextLine(changeLine)
+	changeLine && moveToClassTag(changeLine)
 }
 
 function replaceLineSelection(currLineSelection: vscode.Selection | vscode.Position | vscode.Range, replaceString: string) {
@@ -297,12 +297,46 @@ function insertLineSelection(currLineSelection: vscode.Position, insertString: s
 			callback && callback()
 		})
 	}
-
 }
+
+function insertLineSelectionSpace(currLineSelection: vscode.Position, insertString: string, callback?: () => void) {
+	let editor = vscode.window.activeTextEditor;
+	if (editor) {
+		editor.edit(editBuilder => {
+			editBuilder.insert(currLineSelection, insertString);
+		}).then(() => {
+			callback && callback()
+		})
+	}
+}
+
 
 function moveToStartOfTextLine(line: vscode.TextLine): void {
 	moveToLine(line.lineNumber, line.firstNonWhitespaceCharacterIndex);
 }
+
+
+function moveToClassTag(line: vscode.TextLine): number | null {
+
+	if (!isClassTag(line.text)) {
+		createClassTag(line)
+	}
+
+	const cursorLinePos = cursorPositionInClassTag(line)
+
+	if (cursorLinePos) {
+		moveToLine(line.lineNumber, cursorLinePos);
+		if (isEmpyQuote(line)) {
+			// this is bad fix !
+			setTimeout(() => {
+				emptySpaceAfterCursor(line.lineNumber, cursorLinePos)
+			}, 300);
+		}
+	}
+
+	return cursorLinePos
+}
+
 
 function moveToEndOfQuotesTextLine(line: vscode.TextLine): number | null {
 
@@ -372,7 +406,7 @@ function moveToLine(lineRangeStart: number, cRangeStart: number, lineRangeEnd?: 
 
 function emptySpaceAfterCursor(currLineNumber: number, cursorLinePos: number): void {
 	const emptySpace = " "
-	insertLineSelection(new vscode.Position(currLineNumber, cursorLinePos), emptySpace)
+	insertLineSelectionSpace(new vscode.Position(currLineNumber, cursorLinePos), emptySpace)
 
 }
 
