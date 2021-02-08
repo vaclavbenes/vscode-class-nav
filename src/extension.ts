@@ -1,7 +1,10 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { createClassInDownTag, createClassInUpperTag } from './Attribute';
 import { cursorPositionBeforeCloseTag, cursorPositionBeforeQuote, cursorPositionInClassTag } from './cursor';
+import { getClosestLineWithoutTag, getLine, getLines, insertLineSelectionSpace, jumpToLine, moveToLine } from './Line';
+import { createClassTag, isClassTag, removeClassTag } from './Tag';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -38,7 +41,7 @@ export function activate(context: vscode.ExtensionContext) {
 	})
 
 	registerDisposableCommand("class-navigation.createClass", () => {
-		createClass()
+		jumpIntoClass()
 	})
 
 	registerDisposableCommand("class-navigation.createClassInUpperTag", () => {
@@ -53,93 +56,9 @@ export function activate(context: vscode.ExtensionContext) {
 // this method is called when your extension is deactivated
 export function deactivate() { }
 
-function createClassInUpperTag() {
-	tag.remove()
-
-	setTimeout(() => {
-		let changeLine = getClosestLineWithoutTag("up", RegExp("<[a-z].*>"));
-		createClass(changeLine)
-	}, 100);
-
-}
-
-function createClassInDownTag() {
-	tag.remove()
-
-	setTimeout(() => {
-		let changeLine = getClosestLineWithoutTag("down", RegExp("<[a-z].*>"));
-		createClass(changeLine)
-	}, 100);
-}
-
-class Attribute {
-	name = "class"
-
-	constructor(name?: string) {
-		if (name) {
-			this.name = name
-		}
-	}
-
-	create() {
-		const actualLine = getLine()
-		// create atribute by name
-		actualLine && createClassTag(actualLine)
-	}
-	remove() {
-		const actualLine = getLine()
-		actualLine && removeClassTag(actualLine)
-	}
-}
-
-const tag = new Attribute()
 
 
-function createClassTag(line: vscode.TextLine) {
-	const cursorLinePos = moveToEndOfCloseTag(line)
-	const currLineNumber = line.lineNumber
-
-	const insertString = 'class=""'
-
-	if (cursorLinePos) {
-		insertLineSelection(new vscode.Position(currLineNumber, cursorLinePos), insertString,
-			() => moveToLine(line.lineNumber, cursorLinePos + insertString.length))
-	}
-}
-
-function removeClassTag(line: vscode.TextLine, name = "class") {
-	const currLineNumber = line.lineNumber
-	let cursorLinePos = currCharPos()
-
-	const tag = name + "=\"\""
-
-	if (line.text.includes(tag)) {
-		if (cursorLinePos) {
-			const currLineSelection = new vscode.Range(
-				new vscode.Position(currLineNumber, cursorLinePos - tag.length),
-				new vscode.Position(currLineNumber, cursorLinePos + 1))
-			removeLineSelection(currLineSelection)
-
-		}
-	}
-}
-
-function createClass(line: vscode.TextLine | null = null) {
-
-	if (!line) line = getLine()
-
-	if (line) {
-		if (isSingleTag(line.text) && !isClassTag(line.text)) {
-			createClassTag(line)
-		} else {
-			// is not tag or is complicated tag
-		}
-
-	}
-
-}
-
-const currCharPos = (): number | null => {
+export const currCharPos = (): number | null => {
 	let editor = vscode.window.activeTextEditor;
 	if (editor) {
 		return editor.selection.active.character
@@ -148,193 +67,73 @@ const currCharPos = (): number | null => {
 }
 
 
-
-const isSingleTag = (text: string): boolean => {
-	const reg = RegExp("<[a-z].*>")
-	if (reg.test(text.trim())) {
-		return true
-	} else {
-		return false
-	}
-}
-
-const isClassTag = (text: string): boolean => {
-	if (text.includes("class=")) {
-		return true
-	} else {
-		return false
-	}
-}
+/**
+ * TODO: modify this for multiple selection  *
+ */
 
 function jumpIntoClass() {
 	const line = getLine()
+	// const lines = getLines()
+
+	// lines?.forEach(async line => {
+	// 	console.log(line);
 	line && moveToClassTag(line)
+	// })
+
 }
 
 function isEmpyQuote(line: vscode.TextLine): boolean {
 	return !line?.text.includes('""')
 }
 
-function getLine(): vscode.TextLine | null {
-	let editor = vscode.window.activeTextEditor;
-	if (editor) {
-		let currLineNumber = editor.selection.active.line;
-		const line = editor.document.lineAt(currLineNumber);
-		return line
-	}
-	return null
-}
 
-
-const getClosestLineWithoutTag = (direction: "up" | "down", regexp: RegExp) => {
-	let editor = vscode.window.activeTextEditor;
-	let changeLine: vscode.TextLine | null = null
-
-	if (editor) {
-		let currLineNumber = editor.selection.active.line;
-		if (direction == "up") {
-			for (let i = currLineNumber - 1; i >= 0; i--) {
-				let line = editor.document.lineAt(i);
-				if (!line.isEmptyOrWhitespace && regexp.test(line.text.trim()) && !isClassTag(line.text.trim())) {
-					changeLine = line;
-					break;
-				}
-			}
-		} else if (direction === "down") {
-			for (let i = currLineNumber + 1; i < editor.document.lineCount; i++) {
-				let line = editor.document.lineAt(i);
-				if (!line.isEmptyOrWhitespace && regexp.test(line.text.trim()) && !isClassTag(line.text.trim())) {
-					changeLine = line;
-					break;
-				}
-			}
-		} else {
-			throw new Error("Bad direction choise.");
-		}
-	}
-	return changeLine
-
-}
-
-
-const getClosestLine = (direction: "up" | "down", regexp: RegExp) => {
-	let editor = vscode.window.activeTextEditor;
-	let changeLine: vscode.TextLine | null = null
-
-	if (editor) {
-		let currLineNumber = editor.selection.active.line;
-		if (direction == "up") {
-			for (let i = currLineNumber - 1; i >= 0; i--) {
-				let line = editor.document.lineAt(i);
-				if (!line.isEmptyOrWhitespace && regexp.test(line.text.trim())) {
-					changeLine = line;
-					break;
-				}
-			}
-		} else if (direction === "down") {
-			for (let i = currLineNumber + 1; i < editor.document.lineCount; i++) {
-				let line = editor.document.lineAt(i);
-				if (!line.isEmptyOrWhitespace && regexp.test(line.text.trim())) {
-					changeLine = line;
-					break;
-				}
-			}
-		} else {
-			throw new Error("Bad direction choise.");
-		}
-	}
-	return changeLine
-}
-
-const changePreviousSelection = () => {
-	let editor = vscode.window.activeTextEditor;
-
-	if (editor) {
-		let currLineNumber = editor.selection.active.line;
-		let currCharPos = editor.selection.active.character
-
-		// change previous edit
-		const oldLinePosition = new vscode.Position(currLineNumber, currCharPos);
-		const offset = getOffset(oldLinePosition)
-		removeEmptySpaceBeforeCursor(currLineNumber, currCharPos, currCharPos - offset!);
-	}
-
-}
-
-function jumpToLine(direction: "up" | "down", regexp = /:?class/g) {
-	changePreviousSelection()
-
-	let changeLine = getClosestLine(direction, regexp);
-	changeLine && moveToClassTag(changeLine)
-}
-
-function replaceLineSelection(currLineSelection: vscode.Selection | vscode.Position | vscode.Range, replaceString: string) {
-	let editor = vscode.window.activeTextEditor;
-	if (editor) {
-		editor.edit(editBuilder => {
-			editBuilder.replace(currLineSelection, replaceString);
-		}, { undoStopBefore: true, undoStopAfter: false })
-	}
-
-}
-
-function removeLineSelection(currLineSelection: vscode.Selection | vscode.Range) {
-	let editor = vscode.window.activeTextEditor;
-	if (editor) {
-		editor.edit(editBuilder => {
-			editBuilder.delete(currLineSelection);
-		}, { undoStopBefore: true, undoStopAfter: false })
-	}
-
-}
-
-function insertLineSelection(currLineSelection: vscode.Position, insertString: string, callback?: () => void) {
-	let editor = vscode.window.activeTextEditor;
-	if (editor) {
-		editor.edit(editBuilder => {
-			editBuilder.insert(currLineSelection, insertString);
-		}, { undoStopBefore: true, undoStopAfter: false }).then(() => {
-			callback && callback()
-		})
-	}
-}
-
-function insertLineSelectionSpace(currLineSelection: vscode.Position, insertString: string, callback?: () => void) {
-	let editor = vscode.window.activeTextEditor;
-	if (editor) {
-		editor.edit(editBuilder => {
-			editBuilder.insert(currLineSelection, insertString);
-		}).then(() => {
-			callback && callback()
-		})
-	}
-}
-
-
-function moveToStartOfTextLine(line: vscode.TextLine): void {
-	moveToLine(line.lineNumber, line.firstNonWhitespaceCharacterIndex);
-}
-
-
-function moveToClassTag(line: vscode.TextLine): number | null {
+export function moveToClassTag(line: vscode.TextLine) {
 
 	if (!isClassTag(line.text)) {
-		createClassTag(line)
-	}
 
-	const cursorLinePos = cursorPositionInClassTag(line)
+		const cursorLinePos = moveToEndOfCloseTag(line)
 
-	if (cursorLinePos) {
-		moveToLine(line.lineNumber, cursorLinePos);
-		if (isEmpyQuote(line)) {
-			// this is bad fix !
-			setTimeout(() => {
-				emptySpaceAfterCursor(line.lineNumber, cursorLinePos)
-			}, 300);
+		if (cursorLinePos) {
+
+			createSpaceAndMove(line, cursorLinePos, () => {
+				createClassTag(line, cursorLinePos)
+			})
+
 		}
 	}
 
-	return cursorLinePos
+	if (isClassTag(line.text)) {
+		const cursorLinePos = cursorPositionInClassTag(line)
+
+		if (cursorLinePos) {
+			moveToLine(line.lineNumber, cursorLinePos)
+
+			if (isEmpyQuote(line)) {
+				// this is bad fix !
+				setTimeout(() => {
+					emptySpaceAfterCursor(line.lineNumber, cursorLinePos, () => { })
+				}, 300);
+			}
+		}
+
+	}
+
+
+}
+
+
+function createSpaceAndMove(line: vscode.TextLine, cursorLinePos: number, callback: () => any): number {
+
+	let _cursorLinePos = cursorLinePos
+
+	_cursorLinePos = emptySpaceAfterCursor(line.lineNumber, cursorLinePos,
+		() => {
+			moveToLine(line.lineNumber, _cursorLinePos)
+			createClassTag(line, _cursorLinePos)
+		})
+
+
+	return _cursorLinePos
 }
 
 
@@ -348,7 +147,7 @@ function moveToEndOfQuotesTextLine(line: vscode.TextLine): number | null {
 		if (isEmpyQuote(line)) {
 			// this is bad fix !
 			setTimeout(() => {
-				emptySpaceAfterCursor(line.lineNumber, cursorLinePos)
+				// emptySpaceAfterCursor(line.lineNumber, cursorLinePos)
 			}, 200);
 		}
 	}
@@ -357,83 +156,27 @@ function moveToEndOfQuotesTextLine(line: vscode.TextLine): number | null {
 }
 
 
-function checkFlag(line: vscode.TextLine) {
-	if (flag == false) {
-		setTimeout(checkFlag, 100); /* this checks the flag every 100 milliseconds*/
-	} else {
-		moveToEndOfQuotesTextLine(line)
-	}
-}
-
-
+/** Move you cursor to end of close tag "<div >"
+ *
+ * @param line
+ * @returns cursorLinePos
+ */
 function moveToEndOfCloseTag(line: vscode.TextLine): number | null {
 	const cursorLinePos = cursorPositionBeforeCloseTag(line)
 
-	if (cursorLinePos) {
-		moveToLine(line.lineNumber, cursorLinePos);
-		if (isEmpyQuote(line)) {
-			// this is bad fix !
-			setTimeout(() => {
-				emptySpaceAfterCursor(line.lineNumber, cursorLinePos)
-			}, 100);
-		}
-	}
+	cursorLinePos && moveToLine(line.lineNumber, cursorLinePos);
+
 	return cursorLinePos
 }
 
-function moveToPosition(startPos: vscode.Position, endPos?: vscode.Position): void {
-	moveToLine(startPos.line, startPos.character, endPos && endPos.line, endPos && endPos.character);
-}
 
-function moveToLine(lineRangeStart: number, cRangeStart: number, lineRangeEnd?: number, cRangeEnd?: number): void {
-	const editor = vscode.window.activeTextEditor;
 
-	if (editor) {
-		setTimeout(() => {
-			editor.selection = new vscode.Selection(
-				new vscode.Position(lineRangeStart, cRangeStart),
-				new vscode.Position(lineRangeEnd ? lineRangeEnd : lineRangeStart, cRangeEnd ? cRangeEnd : cRangeStart)
-			);
-
-			// scroll when moving out of current range
-			editor.revealRange(new vscode.Range(
-				new vscode.Position(lineRangeStart, cRangeStart),
-				new vscode.Position(lineRangeEnd ? lineRangeEnd : lineRangeStart, cRangeEnd ? cRangeEnd : cRangeStart)
-			));
-		}, 100);
-	}
-}
-
-function emptySpaceAfterCursor(currLineNumber: number, cursorLinePos: number): void {
+function emptySpaceAfterCursor(currLineNumber: number, cursorLinePos: number, callback: () => any): number {
 	const emptySpace = " "
-	insertLineSelectionSpace(new vscode.Position(currLineNumber, cursorLinePos), emptySpace)
-
+	insertLineSelectionSpace(new vscode.Position(currLineNumber, cursorLinePos), emptySpace, callback)
+	return cursorLinePos + emptySpace.length
 }
 
-function removeEmptySpaceBeforeCursor(currLineNumber: number, cursorLinePos: number, offset: number) {
-	const emptySpace = ""
-	const currLineSelection = new vscode.Range(
-		new vscode.Position(currLineNumber, cursorLinePos - offset),
-		new vscode.Position(currLineNumber, cursorLinePos))
-	replaceLineSelection(currLineSelection, emptySpace)
-}
 
-function getOffset(position: vscode.Position) {
-	let editor = vscode.window.activeTextEditor;
-	if (editor) {
-		const line = editor.document.lineAt(position.line)
-		const currCharPos = position.character
-		let replaceCharCount = currCharPos
 
-		for (let i = currCharPos - 1; i >= 0; i--) {
-			if (/\s/.test(line.text.charAt(i))) {
-				replaceCharCount -= 1
-			} else {
-				break
-			}
-		}
 
-		return replaceCharCount
-
-	}
-}

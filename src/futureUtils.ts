@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { replaceLineSelection } from './Line';
 
 
 function selectAllInQuotes() {
@@ -160,6 +161,51 @@ function getLineUp(channel: vscode.OutputChannel) {
 
 
 
+
+    }
+}
+
+function removeEmptySpaceBeforeCursor(currLineNumber: number, cursorLinePos: number, offset: number) {
+    const emptySpace = ""
+    const currLineSelection = new vscode.Range(
+        new vscode.Position(currLineNumber, cursorLinePos - offset),
+        new vscode.Position(currLineNumber, cursorLinePos))
+    replaceLineSelection(currLineSelection, emptySpace)
+}
+
+
+
+export const changePreviousSelection = () => {
+    let editor = vscode.window.activeTextEditor;
+
+    if (editor) {
+        let currLineNumber = editor.selection.active.line;
+        let currCharPos = editor.selection.active.character
+
+        // change previous edit
+        const oldLinePosition = new vscode.Position(currLineNumber, currCharPos);
+        const offset = getOffset(oldLinePosition)
+        removeEmptySpaceBeforeCursor(currLineNumber, currCharPos, currCharPos - offset!);
+    }
+
+}
+
+function getOffset(position: vscode.Position) {
+    let editor = vscode.window.activeTextEditor;
+    if (editor) {
+        const line = editor.document.lineAt(position.line)
+        const currCharPos = position.character
+        let replaceCharCount = currCharPos
+
+        for (let i = currCharPos - 1; i >= 0; i--) {
+            if (/\s/.test(line.text.charAt(i))) {
+                replaceCharCount -= 1
+            } else {
+                break
+            }
+        }
+
+        return replaceCharCount
 
     }
 }
