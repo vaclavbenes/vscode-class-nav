@@ -30,16 +30,6 @@ Basic plugin for HTML class navigation
         "key": "ctrl+right",
         "command": "class-navigation.jumpIntoClass",
         "when": "editorTextFocus"
-    },
-    {
-        "key": "cmd+PageUp",
-        "command": "class-navigation.createClassInUpperTag",
-        "when": "editorTextFocus"
-    },
-    {
-        "key": "cmd+PageDown",
-        "command": "class-navigation.createClassInUpperTag",
-        "when": "editorTextFocus"
     }
 ```
 
