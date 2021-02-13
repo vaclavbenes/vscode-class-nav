@@ -34,6 +34,5 @@ Basic plugin for HTML class navigation
 ```
 
 Gif
-
-![alt text](https://github.com/adam-p/markdown-here/raw/master/src/common/images/icon48.png "Logo Title Text 1")
+![alt text](https://github.com/vaclavbenes/vscode-class-nav/blob/master/img/class-nav.gif "Class Navigation")
 
