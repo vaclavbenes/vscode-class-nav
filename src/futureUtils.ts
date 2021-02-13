@@ -179,13 +179,41 @@ export const changePreviousSelection = () => {
     let editor = vscode.window.activeTextEditor;
 
     if (editor) {
-        let currLineNumber = editor.selection.active.line;
-        let currCharPos = editor.selection.active.character
 
-        // change previous edit
-        const oldLinePosition = new vscode.Position(currLineNumber, currCharPos);
-        const offset = getOffset(oldLinePosition)
-        removeEmptySpaceBeforeCursor(currLineNumber, currCharPos, currCharPos - offset!);
+        const selections = editor.selections
+
+
+        editor.edit(editBuilder => {
+
+            editor!.selections = selections.map(selection => {
+
+                const line = selection.active.line
+                const character = selection.active.character
+                const pos = selection.active
+
+
+                const currLineSelection = new vscode.Selection(
+                    new vscode.Position(line, character - 1),
+                    new vscode.Position(line, character))
+
+                isEmptySpaceBefore(pos) && editBuilder.delete(currLineSelection)
+
+                return currLineSelection
+            })
+        })
+
+
+
+
+
+
+        // let currLineNumber = editor.selection.active.line;
+        // let currCharPos = editor.selection.active.character
+
+        // // change previous edit
+        // const oldLinePosition = new vscode.Position(currLineNumber, currCharPos);
+        // const offset = getOffset(oldLinePosition)
+        // removeEmptySpaceBeforeCursor(currLineNumber, currCharPos, currCharPos - offset!);
     }
 
 }
@@ -208,4 +236,19 @@ function getOffset(position: vscode.Position) {
         return replaceCharCount
 
     }
+}
+
+export function isEmptySpaceBefore(position: vscode.Position): boolean {
+
+    let editor = vscode.window.activeTextEditor;
+    if (editor) {
+        const line = editor.document.lineAt(position.line)
+        const currCharPos = position.character
+
+        if (/\s/.test(line.text.charAt(currCharPos - 1))) {
+            return true
+        }
+    }
+
+    return false
 }

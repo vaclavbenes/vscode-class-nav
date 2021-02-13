@@ -14,13 +14,13 @@ class Attribute {
     }
 
     create() {
-        const actualLine = getLine()
+        // const actualLine = getLine()
         // create atribute by name
         // actualLine && createClassTag(actualLine)
     }
     remove() {
-        const actualLine = getLine()
-        actualLine && removeClassTag(actualLine)
+        // const actualLine = getLine()
+        // actualLine && removeClassTag(actualLine)
     }
 }
 

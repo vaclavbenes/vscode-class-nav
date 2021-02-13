@@ -3,8 +3,9 @@
 import * as vscode from 'vscode';
 import { createClassInDownTag, createClassInUpperTag } from './Attribute';
 import { cursorPositionBeforeCloseTag, cursorPositionBeforeQuote, cursorPositionInClassTag } from './cursor';
-import { getClosestLineWithoutTag, getLine, getLines, insertLineSelectionSpace, jumpToLine, moveToLine } from './Line';
-import { createClassTag, isClassTag, removeClassTag } from './Tag';
+import { isEmptySpaceBefore } from './futureUtils';
+import { getLine, jumpToLine, moveToLine } from './Line';
+import { isClassTag } from './Tag';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -66,115 +67,182 @@ export const currCharPos = (): number | null => {
 	return null
 }
 
+export const currEditor = () => {
+	let editor = vscode.window.activeTextEditor;
+	return editor
+}
+
 
 /**
  * TODO: modify this for multiple selection  *
  */
 
 function jumpIntoClass() {
-	const line = getLine()
-	// const lines = getLines()
 
-	// lines?.forEach(async line => {
-	// 	console.log(line);
-	line && moveToClassTag(line)
-	// })
+	moveToEndOfCloseTag()
+	insertText(" class=\"\"", () => {
+		moveToEndOfQuotesTextLine()
+	})
 
 }
 
-function isEmpyQuote(line: vscode.TextLine): boolean {
-	return !line?.text.includes('""')
+function isEmptyQuote(text: string): boolean {
+	return !text.includes('""')
 }
 
 
-export function moveToClassTag(line: vscode.TextLine) {
+export function moveToCloseClassTag(closeLine: vscode.TextLine): Boolean {
+	let flag = true
 
-	if (!isClassTag(line.text)) {
+	let editor = vscode.window.activeTextEditor;
 
-		const cursorLinePos = moveToEndOfCloseTag(line)
+	if (editor) {
+		let selections = editor.selections
 
-		if (cursorLinePos) {
+		editor.selections = selections.map(selection => {
+			const line = closeLine
+			let cursorLinePos = selection.active.character
 
-			createSpaceAndMove(line, cursorLinePos, () => {
-				createClassTag(line, cursorLinePos)
-			})
-
-		}
-	}
-
-	if (isClassTag(line.text)) {
-		const cursorLinePos = cursorPositionInClassTag(line)
-
-		if (cursorLinePos) {
-			moveToLine(line.lineNumber, cursorLinePos)
-
-			if (isEmpyQuote(line)) {
-				// this is bad fix !
-				setTimeout(() => {
-					emptySpaceAfterCursor(line.lineNumber, cursorLinePos, () => { })
-				}, 300);
+			if (isClassTag(line!.text)) {
+				const _cursorLinePos = cursorPositionInClassTag(line!)
+				if (_cursorLinePos) {
+					cursorLinePos = _cursorLinePos
+					flag = false
+				}
 			}
-		}
-
-	}
-
-
-}
-
-
-function createSpaceAndMove(line: vscode.TextLine, cursorLinePos: number, callback: () => any): number {
-
-	let _cursorLinePos = cursorLinePos
-
-	_cursorLinePos = emptySpaceAfterCursor(line.lineNumber, cursorLinePos,
-		() => {
-			moveToLine(line.lineNumber, _cursorLinePos)
-			createClassTag(line, _cursorLinePos)
+			return moveToLine(line!.lineNumber, cursorLinePos!);
 		})
 
+	}
+	return flag
 
-	return _cursorLinePos
 }
 
+export function moveToClassTag(): Boolean {
+	let flag = true
 
-function moveToEndOfQuotesTextLine(line: vscode.TextLine): number | null {
+	let editor = vscode.window.activeTextEditor;
 
+	if (editor) {
+		let selections = editor.selections
+		editor.selections = selections.map(selection => {
+			const line = getLine(selection)
+			let cursorLinePos = selection.active.character
 
-	const cursorLinePos = cursorPositionBeforeQuote(line)
+			if (isClassTag(line!.text)) {
+				const _cursorLinePos = cursorPositionInClassTag(line!)
+				if (_cursorLinePos) {
+					cursorLinePos = _cursorLinePos
+					flag = false
+				}
+			}
+			return moveToLine(line!.lineNumber, cursorLinePos!);
+		})
 
-	if (cursorLinePos) {
-		moveToLine(line.lineNumber, cursorLinePos);
-		if (isEmpyQuote(line)) {
-			// this is bad fix !
-			setTimeout(() => {
-				// emptySpaceAfterCursor(line.lineNumber, cursorLinePos)
-			}, 200);
-		}
 	}
 
-	return cursorLinePos
+	return flag
+
 }
 
 
-/** Move you cursor to end of close tag "<div >"
+export function insertText(text: string, callback: any = null, ignore: boolean = false) {
+	let editor = vscode.window.activeTextEditor;
+
+	if (editor) {
+		let selections = editor.selections
+
+		editor.edit(editBuilder => {
+			selections.forEach(selection => {
+				const pos = selection.active
+				const line = getLine(selection)
+
+				console.log("isEmptyQuote", isEmptyQuote(line!.text));
+
+				if (isClassTag(line!.text) == false) {
+					editBuilder.insert(pos, text)
+				}
+
+				else if ((ignore) && isEmptyQuote(line!.text)) {
+					editBuilder.insert(pos, text)
+				}
+
+			})
+		}).then(() => {
+			callback && callback()
+		})
+	}
+}
+
+
+export function moveToEndOfQuotesTextLine() {
+
+	let editor = vscode.window.activeTextEditor;
+
+	if (editor) {
+
+		let selections = editor.selections
+
+		editor.edit(editBuilder => {
+
+			editor!.selections = selections.map(selection => {
+				const line = getLine(selection)
+
+				const cursorLinePos = cursorPositionBeforeQuote(line!)
+
+				return moveToLine(line!.lineNumber, cursorLinePos!);
+			})
+
+			emptySpaceAfterCursor()
+
+		})
+	}
+}
+
+/** Move you cursor to end of close tag "<div|>"
  *
  * @param line
  * @returns cursorLinePos
  */
-function moveToEndOfCloseTag(line: vscode.TextLine): number | null {
-	const cursorLinePos = cursorPositionBeforeCloseTag(line)
+export function moveToEndOfCloseTag() {
+	let editor = vscode.window.activeTextEditor;
 
-	cursorLinePos && moveToLine(line.lineNumber, cursorLinePos);
+	if (editor) {
+		let selections = editor.selections
 
-	return cursorLinePos
+		editor.selections = selections.map(selection => {
+			const line = getLine(selection)
+			const cursorLinePos = cursorPositionBeforeCloseTag(line!)
+			return moveToLine(line!.lineNumber, cursorLinePos!);
+		})
+	}
+
 }
 
 
+/**
+ * Create empty space after cursor
+ * timeout troubles
+ */
+export function emptySpaceAfterCursor(): void {
+	let editor = vscode.window.activeTextEditor;
 
-function emptySpaceAfterCursor(currLineNumber: number, cursorLinePos: number, callback: () => any): number {
-	const emptySpace = " "
-	insertLineSelectionSpace(new vscode.Position(currLineNumber, cursorLinePos), emptySpace, callback)
-	return cursorLinePos + emptySpace.length
+	if (editor) {
+		const emptySpace = " "
+		let selections = editor.selections
+
+		editor.edit(editBuilder => {
+			selections.forEach(selection => {
+				const pos = selection.active
+				if (!isEmptySpaceBefore(pos)) {
+					editBuilder.insert(pos, emptySpace)
+				}
+			})
+		})
+
+
+
+	}
 }
 
 

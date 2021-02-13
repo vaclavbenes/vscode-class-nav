@@ -1,14 +1,23 @@
 import * as vscode from 'vscode';
-import { moveToClassTag } from './extension';
-import { changePreviousSelection } from './futureUtils';
+import { cursorPositionBeforeCloseTag } from './cursor';
+import { moveToCloseClassTag, emptySpaceAfterCursor } from './extension';
+import { changePreviousSelection, isEmptySpaceBefore } from './futureUtils';
 import { isClassTag } from './Tag';
 
 
+
 export function jumpToLine(direction: "up" | "down", regexp = /:?class/g) {
-    changePreviousSelection()
+    changePreviousSelection() // TODO: fix this
+
 
     let changeLine = getClosestLine(direction, regexp);
-    changeLine && moveToClassTag(changeLine)
+    changeLine && moveToCloseClassTag(changeLine)
+
+
+    setTimeout(() => {
+        emptySpaceAfterCursor()
+    }, 100);
+
 }
 
 export function replaceLineSelection(currLineSelection: vscode.Selection | vscode.Position | vscode.Range, replaceString: string) {
@@ -17,6 +26,8 @@ export function replaceLineSelection(currLineSelection: vscode.Selection | vscod
         editor.edit(editBuilder => {
             editBuilder.replace(currLineSelection, replaceString);
         }, { undoStopBefore: true, undoStopAfter: false })
+
+
     }
 
 }
@@ -117,11 +128,14 @@ export const getClosestLine = (direction: "up" | "down", regexp: RegExp) => {
     return changeLine
 }
 
-export function moveToLine(lineRangeStart: number, cRangeStart: number, lineRangeEnd?: number, cRangeEnd?: number): void {
+export function moveToLine(lineRangeStart: number, cRangeStart: number, lineRangeEnd?: number, cRangeEnd?: number): vscode.Selection {
     const editor = vscode.window.activeTextEditor;
 
+    let selection = null
+
+
     if (editor) {
-        editor.selection = new vscode.Selection(
+        selection = new vscode.Selection(
             new vscode.Position(lineRangeStart, cRangeStart),
             new vscode.Position(lineRangeEnd ? lineRangeEnd : lineRangeStart, cRangeEnd ? cRangeEnd : cRangeStart)
         );
@@ -132,17 +146,21 @@ export function moveToLine(lineRangeStart: number, cRangeStart: number, lineRang
             new vscode.Position(lineRangeEnd ? lineRangeEnd : lineRangeStart, cRangeEnd ? cRangeEnd : cRangeStart)
         ));
 
+        editor.selection = selection;
+
     }
+
+    return selection!
 }
 
 /**
  * Modify selection for multi select
  * @returns
  */
-export function getLine(): vscode.TextLine | null {
+export function getLine(selection: vscode.Selection): vscode.TextLine | null {
     let editor = vscode.window.activeTextEditor;
     if (editor) {
-        let currLineNumber = editor.selection.active.line;
+        let currLineNumber = selection.active.line;
         const line = editor.document.lineAt(currLineNumber);
         return line
     }
@@ -152,14 +170,36 @@ export function getLine(): vscode.TextLine | null {
 
 export function getLines(): vscode.TextLine[] | null {
     let editor = vscode.window.activeTextEditor;
-    if (editor) {
-        let selections = editor.selections
 
-        const lines = selections.map(selection => {
-            return editor!.document.lineAt(selection.active.line)
+
+    if (editor) {
+        let doc: vscode.TextDocument = editor.document;
+
+        let selections = editor.selections;
+
+
+        editor.selections = selections.map(selection => {
+
+            let line: number | null = null
+
+            for (let i = selection.start.line; i <= selection.end.line; i++) {
+
+                line = i
+
+            }
+
+            let character = cursorPositionBeforeCloseTag(doc.lineAt(line!))
+
+
+            return new vscode.Selection(
+                new vscode.Position(line!, character!),
+                new vscode.Position(line!, character!)
+            );
+
         })
 
-        return lines
+
+
     }
 
     return null
