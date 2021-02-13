@@ -27,7 +27,6 @@ export function replaceLineSelection(currLineSelection: vscode.Selection | vscod
             editBuilder.replace(currLineSelection, replaceString);
         }, { undoStopBefore: true, undoStopAfter: false })
 
-
     }
 
 }

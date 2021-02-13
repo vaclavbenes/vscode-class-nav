@@ -3,7 +3,7 @@
 import * as vscode from 'vscode';
 import { createClassInDownTag, createClassInUpperTag } from './Attribute';
 import { cursorPositionBeforeCloseTag, cursorPositionBeforeQuote, cursorPositionInClassTag } from './cursor';
-import { isEmptySpaceBefore } from './futureUtils';
+import { isEmptyClass, isEmptySpaceBefore } from './futureUtils';
 import { getLine, jumpToLine, moveToLine } from './Line';
 import { isClassTag } from './Tag';
 
@@ -157,8 +157,6 @@ export function insertText(text: string, callback: any = null, ignore: boolean =
 				const pos = selection.active
 				const line = getLine(selection)
 
-				console.log("isEmptyQuote", isEmptyQuote(line!.text));
-
 				if (isClassTag(line!.text) == false) {
 					editBuilder.insert(pos, text)
 				}
@@ -192,8 +190,6 @@ export function moveToEndOfQuotesTextLine() {
 
 				return moveToLine(line!.lineNumber, cursorLinePos!);
 			})
-
-			emptySpaceAfterCursor()
 
 		})
 	}
@@ -234,7 +230,7 @@ export function emptySpaceAfterCursor(): void {
 		editor.edit(editBuilder => {
 			selections.forEach(selection => {
 				const pos = selection.active
-				if (!isEmptySpaceBefore(pos)) {
+				if (!isEmptySpaceBefore(pos) && !isEmptyClass(pos)) {
 					editBuilder.insert(pos, emptySpace)
 				}
 			})

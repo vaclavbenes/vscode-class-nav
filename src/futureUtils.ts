@@ -191,9 +191,14 @@ export const changePreviousSelection = () => {
                 const character = selection.active.character
                 const pos = selection.active
 
+                let _character = character
+
+                if (character !== 0) {
+                    _character = character - 1
+                }
 
                 const currLineSelection = new vscode.Selection(
-                    new vscode.Position(line, character - 1),
+                    new vscode.Position(line, _character),
                     new vscode.Position(line, character))
 
                 isEmptySpaceBefore(pos) && editBuilder.delete(currLineSelection)
@@ -246,6 +251,20 @@ export function isEmptySpaceBefore(position: vscode.Position): boolean {
         const currCharPos = position.character
 
         if (/\s/.test(line.text.charAt(currCharPos - 1))) {
+            return true
+        }
+    }
+
+    return false
+}
+
+export function isEmptyClass(position: vscode.Position): boolean {
+
+    let editor = vscode.window.activeTextEditor;
+    if (editor) {
+        const line = editor.document.lineAt(position.line)
+
+        if (line.text.includes("class=\"\"")) {
             return true
         }
     }
