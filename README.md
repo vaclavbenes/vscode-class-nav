@@ -34,5 +34,5 @@ Basic plugin for HTML class navigation
 ```
 
 
-![alt text](https://github.com/vaclavbenes/vscode-class-nav/blob/master/img/class-nav.gif "Class Navigation")
+![alt text](./img/class-nav.gif "Class Navigation")
 
