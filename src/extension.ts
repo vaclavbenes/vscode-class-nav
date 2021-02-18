@@ -97,7 +97,7 @@ export function moveToCloseClassTag(closeLine: vscode.TextLine): Boolean {
 	let editor = vscode.window.activeTextEditor;
 
 	if (editor) {
-		let selections = editor.selections
+		let selections: vscode.Selection[] = editor.selections
 
 		editor.selections = selections.map(selection => {
 			const line = closeLine
@@ -124,7 +124,7 @@ export function moveToClassTag(): Boolean {
 	let editor = vscode.window.activeTextEditor;
 
 	if (editor) {
-		let selections = editor.selections
+		let selections: vscode.Selection[] = editor.selections
 		editor.selections = selections.map(selection => {
 			const line = getLine(selection)
 			let cursorLinePos = selection.active.character
@@ -150,20 +150,27 @@ export function insertText(text: string, callback: any = null, ignore: boolean =
 	let editor = vscode.window.activeTextEditor;
 
 	if (editor) {
-		let selections = editor.selections
+		let selections: vscode.Selection[] = editor.selections
 
 		editor.edit(editBuilder => {
 			selections.forEach(selection => {
 				const pos = selection.active
 				const line = getLine(selection)
 
-				if (isClassTag(line!.text) == false) {
-					editBuilder.insert(pos, text)
+
+				if (!line?.isEmptyOrWhitespace) {
+					if (isClassTag(line!.text) == false) {
+						console.log("here");
+
+						editBuilder.insert(pos, text)
+					}
+
+					else if ((ignore) && isEmptyQuote(line!.text)) {
+						editBuilder.insert(pos, text)
+					}
 				}
 
-				else if ((ignore) && isEmptyQuote(line!.text)) {
-					editBuilder.insert(pos, text)
-				}
+
 
 			})
 		}).then(() => {
