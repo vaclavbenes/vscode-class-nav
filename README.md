@@ -16,21 +16,18 @@ Basic plugin for HTML class navigation
 * `class-navigation.jumpIntoClass`:  jump into class quotes last position
 
 ```json
- {
-        "key": "ctrl+up",
-        "command": "class-navigation.jumpUpToClass",
-        "when": "editorTextFocus"
+    {
+        "key": "ctrl+alt+right",
+        "command": "class-navigation.jumpIntoClass"
     },
     {
-        "key": "ctrl+down",
-        "command": "class-navigation.jumpDownToClass",
-        "when": "editorTextFocus"
+        "key": "ctrl+alt+up",
+        "command": "class-navigation.jumpUpToClass"
     },
     {
-        "key": "ctrl+right",
-        "command": "class-navigation.jumpIntoClass",
-        "when": "editorTextFocus"
-    }
+        "key": "ctrl+alt+down",
+        "command": "class-navigation.jumpDownToClass"
+    },
 ```
 
 
