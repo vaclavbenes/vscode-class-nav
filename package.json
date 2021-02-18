@@ -37,18 +37,6 @@
 			{
 				"command": "class-navigation.jumpIntoClass",
 				"title": "Jump into to class"
-			},
-			{
-				"command": "class-navigation.createClass",
-				"title": "Create class in tag"
-			},
-			{
-				"command": "class-navigation.createClassInUpperTag",
-				"title": "Create class in upper tag"
-			},
-			{
-				"command": "class-navigation.createClassInDownTag",
-				"title": "Create class in down tag"
 			}
 		]
 	},
